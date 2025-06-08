@@ -1,0 +1,50 @@
+name: CI/CD
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ libsqlite3-dev libgtest-dev gcovr
+        cd /usr/src/gtest
+        sudo cmake CMakeLists.txt
+        sudo make
+        sudo cp lib/*.a /usr/lib
+        sudo ln -s /usr/lib/libgtest.a /usr/local/lib/libgtest.a
+        sudo ln -s /usr/lib/libgtest_main.a /usr/local/lib/libgtest_main.a
+    
+    - name: Create build directory
+      run: mkdir -p build
+    
+    - name: Configure CMake with coverage flags
+      run: cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" ../project
+    
+    - name: Build
+      run: cd build && make
+    
+    - name: Run tests
+      run: cd build && ctest --verbose
+    
+    - name: Generate coverage report
+      run: |
+        cd build
+        gcovr -r ../project --xml-pretty -o coverage.xml
+        ls -la coverage.xml  # Verify the file exists
+    
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./build/coverage.xml
+        fail_ci_if_error: true
+        verbose: true  
