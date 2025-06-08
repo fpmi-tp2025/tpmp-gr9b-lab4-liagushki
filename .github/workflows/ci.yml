@@ -15,7 +15,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake g++ libsqlite3-dev libgtest-dev gcovr
+        sudo apt-get install -y cmake g++ libsqlite3-dev libgtest-dev
         cd /usr/src/gtest
         sudo cmake CMakeLists.txt
         sudo make
@@ -26,25 +26,11 @@ jobs:
     - name: Create build directory
       run: mkdir -p build
     
-    - name: Configure CMake with coverage flags
-      run: cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" ../project
+    - name: Configure CMake
+      run: cd build && cmake -DCMAKE_BUILD_TYPE=Debug ../project
     
     - name: Build
       run: cd build && make
     
     - name: Run tests
       run: cd build && ctest --verbose
-    
-    - name: Generate coverage report
-      run: |
-        cd build
-        gcovr -r ../project --xml-pretty -o coverage.xml
-        ls -la coverage.xml  # Verify the file exists
-    
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./build/coverage.xml
-        fail_ci_if_error: true
-        verbose: true  
